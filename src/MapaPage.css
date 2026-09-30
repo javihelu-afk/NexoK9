@@ -1,0 +1,76 @@
+.mapa-pagina {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #0f0f0f;
+  color: #e5e5e5;
+  font-family: sans-serif;
+}
+
+.mapa-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mapa-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-volver {
+  background: #262626;
+  color: #e5e5e5;
+  border: 1px solid #3a3a3a;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.meteo-resumen {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.mapa-leaflet {
+  flex: 1;
+  width: 100%;
+}
+
+.mapa-footer {
+  padding: 12px 16px;
+  background: #1a1a1a;
+  border-top: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.instrucciones {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.distancia-resultado {
+  font-size: 16px;
+  margin: 0;
+}
+
+.btn-reset {
+  align-self: flex-start;
+  background: #7f1d1d;
+  color: #fca5a5;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}

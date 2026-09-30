@@ -1,0 +1,126 @@
+.diary-card * {
+  box-sizing: border-box;
+}
+
+.diary-card {
+  max-width: 400px;
+  margin: 40px auto;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: #e5e5e5;
+  font-family: sans-serif;
+}
+
+.diary-card h2 {
+  margin: 0 0 8px;
+}
+
+.diary-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+.diary-card input,
+.diary-card select,
+.diary-card textarea {
+  background: #262626;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #e5e5e5;
+  font-size: 14px;
+  width: 100%;
+}
+
+.diary-card .row {
+  display: flex;
+  gap: 12px;
+}
+
+.diary-card .row label {
+  flex: 1;
+  min-width: 0;
+}
+
+.diary-card button {
+  margin-top: 8px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-clima {
+  background: #1e3a5f;
+  color: #93c5fd;
+  border: 1px solid #2c5282;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-clima:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.error-clima {
+  color: #f87171;
+  font-size: 12px;
+  margin: -6px 0 0;
+}
+
+.coords-info {
+  font-size: 11px;
+  color: #6b7280;
+  margin: -6px 0 0;
+  font-family: monospace;
+}
+
+.mini-mapa {
+  width: 100%;
+  height: 160px;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  margin-top: -4px;
+}
+
+.btn-mapa {
+  background: #374151;
+  color: #d1d5db;
+  border: 1px solid #4b5563;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: -6px;
+}
+
+.campo-con-unidad {
+  display: flex;
+  gap: 6px;
+}
+
+.campo-con-unidad input {
+  flex: 1;
+  min-width: 0;
+}
+
+.campo-con-unidad select {
+  width: 62px;
+  flex-shrink: 0;
+  padding: 8px 2px;
+  font-size: 11px;
+}
