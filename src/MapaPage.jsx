@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
@@ -32,8 +32,8 @@ function MapaPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
-  const lat = parseFloat(searchParams.get('lat'))
-  const lon = parseFloat(searchParams.get('lon'))
+  const latParam = parseFloat(searchParams.get('lat'))
+  const lonParam = parseFloat(searchParams.get('lon'))
   const temp = searchParams.get('temp')
   const tempUnidad = searchParams.get('tempUnidad') || 'C'
   const hum = searchParams.get('hum')
@@ -41,18 +41,60 @@ function MapaPage() {
   const vientoUnidad = searchParams.get('vientoUnidad') || 'km/h'
   const direccion = searchParams.get('direccion')
 
-  const puntoBase = { lat, lng: lon }
+  const tieneParams = !isNaN(latParam) && !isNaN(lonParam)
+
+  const [coords, setCoords] = useState(
+    tieneParams ? { lat: latParam, lon: lonParam } : null
+  )
+  const [buscandoUbicacion, setBuscandoUbicacion] = useState(!tieneParams)
+  const [errorUbicacion, setErrorUbicacion] = useState('')
+
+  useEffect(() => {
+    if (tieneParams) return
+
+    if (!navigator.geolocation) {
+      setErrorUbicacion('Este navegador no soporta geolocalización')
+      setBuscandoUbicacion(false)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCoords({ lat: position.coords.latitude, lon: position.coords.longitude })
+        setBuscandoUbicacion(false)
+      },
+      (error) => {
+        console.error('Error de geolocalización:', error)
+        setErrorUbicacion('No se pudo obtener tu ubicación. Revisa los permisos del navegador.')
+        setBuscandoUbicacion(false)
+      }
+    )
+  }, [tieneParams])
+
+  const puntoBase = coords ? { lat: coords.lat, lng: coords.lon } : null
   const [puntoSustancia, setPuntoSustancia] = useState(null)
 
   const distancia =
-    puntoSustancia != null
+    puntoSustancia != null && puntoBase != null
       ? Math.round(L.latLng(puntoBase).distanceTo(L.latLng(puntoSustancia)))
       : null
 
-  if (isNaN(lat) || isNaN(lon)) {
+  if (buscandoUbicacion) {
     return (
       <div className="mapa-pagina">
-        <p>No hay ubicación cargada. Ve al diario y pulsa "Meteorología" primero.</p>
+        <p>Obteniendo tu ubicación...</p>
+        <div className="mapa-nav">
+          <button onClick={() => navigate('/')}>← Portada</button>
+          <button onClick={() => navigate('/diario')}>📋 Ir al diario</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (errorUbicacion || !puntoBase) {
+    return (
+      <div className="mapa-pagina">
+        <p>{errorUbicacion || 'No hay ubicación cargada.'}</p>
         <div className="mapa-nav">
           <button onClick={() => navigate('/')}>← Portada</button>
           <button onClick={() => navigate('/diario')}>📋 Ir al diario</button>
@@ -75,7 +117,7 @@ function MapaPage() {
         </div>
       </div>
 
-      <MapContainer center={[lat, lon]} zoom={18} className="mapa-leaflet">
+      <MapContainer center={[puntoBase.lat, puntoBase.lng]} zoom={18} className="mapa-leaflet">
         <TileLayer
           attribution="Tiles &copy; Esri"
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"

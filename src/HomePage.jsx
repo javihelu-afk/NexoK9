@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import logo from './assets/logo.png'
+import logo from './assets/logo.svg'
 import './HomePage.css'
 
 function HomePage() {
@@ -32,6 +32,9 @@ function HomePage() {
           <div className="menu-lateral">
             <button onClick={() => irA('/diario')}>
               🐾 Iniciar ejercicio
+            </button>
+            <button onClick={() => irA('/ficha-perro')}>
+              🐕 Ficha K9
             </button>
             <button onClick={() => irA('/mapa')}>
               🗺️ Mapa / Distancia

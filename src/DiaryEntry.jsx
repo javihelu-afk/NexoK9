@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from './firebase'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, getDocs, query, orderBy, serverTimestamp } from 'firebase/firestore'
 import './DiaryEntry.css'
 
 const TIPOS_EJERCICIO = [
@@ -82,6 +82,8 @@ function convertirViento(valor, desde, hacia) {
 
 function DiaryEntry() {
   const navigate = useNavigate()
+  const [menuAbierto, setMenuAbierto] = useState(false)
+
   const [form, setForm] = useState({
     perro: '',
     fecha: fechaHoyISO(),
@@ -106,6 +108,15 @@ function DiaryEntry() {
   const [cargandoClima, setCargandoClima] = useState(false)
   const [errorClima, setErrorClima] = useState('')
 
+  const [mostrarSelectorPerro, setMostrarSelectorPerro] = useState(false)
+  const [cargandoPerros, setCargandoPerros] = useState(false)
+  const [perrosGuardados, setPerrosGuardados] = useState([])
+
+  const irA = (ruta) => {
+    setMenuAbierto(false)
+    navigate(ruta)
+  }
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
@@ -120,6 +131,28 @@ function DiaryEntry() {
     const nuevaUnidad = e.target.value
     const nuevoValor = convertirViento(form.vientoVelocidad, form.vientoUnidad, nuevaUnidad)
     setForm({ ...form, vientoVelocidad: nuevoValor, vientoUnidad: nuevaUnidad })
+  }
+
+  const abrirSelectorPerro = async () => {
+    setMostrarSelectorPerro(true)
+    if (perrosGuardados.length > 0) return
+    setCargandoPerros(true)
+    try {
+      const q = query(collection(db, 'perros'), orderBy('nombre'))
+      const snap = await getDocs(q)
+      setPerrosGuardados(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    } catch (error) {
+      console.error('Error cargando perros:', error)
+    }
+    setCargandoPerros(false)
+  }
+
+  const seleccionarPerroGuardado = (e) => {
+    const nombre = e.target.value
+    if (nombre) {
+      setForm((prev) => ({ ...prev, perro: nombre }))
+    }
+    setMostrarSelectorPerro(false)
   }
 
   const cargarClima = () => {
@@ -218,151 +251,206 @@ function DiaryEntry() {
   }
 
   return (
-    <form className="diary-card" onSubmit={handleSubmit}>
-      <h2>Nuevo registro</h2>
+    <>
+      <button
+        className="diary-btn-hamburguesa"
+        onClick={() => setMenuAbierto(!menuAbierto)}
+        aria-label="Abrir menú"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
 
-      <label>
-        Perro
-        <input name="perro" value={form.perro} onChange={handleChange} placeholder="Nombre del perro" />
-      </label>
+      {menuAbierto && (
+        <>
+          <div className="diary-menu-overlay" onClick={() => setMenuAbierto(false)} />
+          <div className="diary-menu-lateral">
+            <button onClick={() => irA('/')}>
+              ← Portada
+            </button>
+            <button onClick={() => irA('/ficha-perro')}>
+              🐕 Ficha K9
+            </button>
+            <button onClick={() => irA('/mapa')}>
+              🗺️ Mapa / Distancia
+            </button>
+            <button className="btn-proximamente" disabled>
+              📋 Historial de trabajo
+              <span className="etiqueta-proximamente">Próximamente</span>
+            </button>
+          </div>
+        </>
+      )}
 
-      <div className="row">
+      <form className="diary-card" onSubmit={handleSubmit}>
+        <h2>Nuevo registro</h2>
+
         <label>
-          Fecha
-          <input type="date" name="fecha" value={form.fecha} onChange={handleChange} />
+          Perro
+          <div className="campo-con-boton">
+            <input name="perro" value={form.perro} onChange={handleChange} placeholder="Nombre del perro" />
+            <button type="button" className="btn-cargar-k9" onClick={abrirSelectorPerro}>
+              🐕 Cargar K9
+            </button>
+          </div>
         </label>
-        <label>
-          Hora
-          <input type="time" name="hora" value={form.hora} onChange={handleChange} />
-        </label>
-      </div>
 
-      <label>
-        Tipo de ejercicio
-        <select name="tipoEjercicio" value={form.tipoEjercicio} onChange={handleChange}>
-          {TIPOS_EJERCICIO.map((tipo) => (
-            <option key={tipo} value={tipo}>{tipo}</option>
-          ))}
-        </select>
-      </label>
+        {mostrarSelectorPerro && (
+          <div className="selector-perro">
+            {cargandoPerros ? (
+              <p className="texto-selector-perro">Cargando perros...</p>
+            ) : perrosGuardados.length === 0 ? (
+              <p className="texto-selector-perro">No hay perros guardados. Ve a "Ficha K9" para crear uno.</p>
+            ) : (
+              <select autoFocus defaultValue="" onChange={seleccionarPerroGuardado}>
+                <option value="" disabled>Selecciona un perro</option>
+                {perrosGuardados.map((p) => (
+                  <option key={p.id} value={p.nombre}>{p.nombre}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
 
-      <div className="row">
+        <div className="row">
+          <label>
+            Fecha
+            <input type="date" name="fecha" value={form.fecha} onChange={handleChange} />
+          </label>
+          <label>
+            Hora
+            <input type="time" name="hora" value={form.hora} onChange={handleChange} />
+          </label>
+        </div>
+
         <label>
-          Resultado
-          <select name="resultado" value={form.resultado} onChange={handleChange}>
-            {RESULTADOS.map((r) => (
-              <option key={r.valor} value={r.valor}>{r.etiqueta}</option>
+          Tipo de ejercicio
+          <select name="tipoEjercicio" value={form.tipoEjercicio} onChange={handleChange}>
+            {TIPOS_EJERCICIO.map((tipo) => (
+              <option key={tipo} value={tipo}>{tipo}</option>
             ))}
           </select>
         </label>
 
-        <label>
-          Tiempo de trabajo (min)
-          <input
-            type="number"
-            name="tiempoTrabajo"
-            value={form.tiempoTrabajo}
-            onChange={handleChange}
-            placeholder="Ej: 5"
-          />
-        </label>
-      </div>
-
-      <button
-        type="button"
-        className="btn-clima"
-        onClick={cargarClima}
-        disabled={cargandoClima}
-      >
-        {cargandoClima ? 'Obteniendo ubicación y clima...' : '📍 Meteorología'}
-      </button>
-      {errorClima && <p className="error-clima">{errorClima}</p>}
-
-      {form.lat && (
-        <>
-          <p className="coords-info">
-            Ubicación: {form.lat}, {form.lon}
-          </p>
-          <iframe
-            className="mini-mapa"
-            title="Ubicación del ejercicio"
-            src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.lon) - 0.01}%2C${Number(form.lat) - 0.01}%2C${Number(form.lon) + 0.01}%2C${Number(form.lat) + 0.01}&layer=mapnik&marker=${form.lat}%2C${form.lon}`}
-          />
-          <button type="button" className="btn-mapa" onClick={irAlMapa}>
-            🛰️ Mapa/Distancia
-          </button>
-        </>
-      )}
-
-      <div className="row">
-        <label>
-          Temperatura
-          <div className="campo-con-unidad">
-            <input type="number" name="temperatura" value={form.temperatura} onChange={handleChange} step="0.1" />
-            <select value={form.temperaturaUnidad} onChange={cambiarUnidadTemp}>
-              {UNIDADES_TEMP.map((u) => (
-                <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
-              ))}
-            </select>
-          </div>
-        </label>
-        <label>
-          Humedad (%)
-          <input type="number" name="humedad" value={form.humedad} onChange={handleChange} />
-        </label>
-      </div>
-
-      <div className="row">
-        <label>
-          Viento
-          <div className="campo-con-unidad">
-            <input type="number" name="vientoVelocidad" value={form.vientoVelocidad} onChange={handleChange} step="0.1" />
-            <select value={form.vientoUnidad} onChange={cambiarUnidadViento}>
-              {UNIDADES_VIENTO.map((u) => (
-                <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
-              ))}
-            </select>
-          </div>
-        </label>
-        <label>
-          Dirección viento
-          <input name="vientoDireccion" value={form.vientoDireccion} onChange={handleChange} placeholder="Ej: NE" />
-        </label>
-      </div>
-
-      {form.resultado !== 'en_blanco' && (
-        <>
+        <div className="row">
           <label>
-            Sustancia
-            <input name="sustancia" value={form.sustancia} onChange={handleChange} placeholder="Ej: TNT, C4, Hachís" />
+            Resultado
+            <select name="resultado" value={form.resultado} onChange={handleChange}>
+              {RESULTADOS.map((r) => (
+                <option key={r.valor} value={r.valor}>{r.etiqueta}</option>
+              ))}
+            </select>
           </label>
 
-          <div className="row">
-            <label>
-              Cantidad
-              <input type="number" name="cantidad" value={form.cantidad} onChange={handleChange} />
-            </label>
+          <label>
+            Tiempo de trabajo (min)
+            <input
+              type="number"
+              name="tiempoTrabajo"
+              value={form.tiempoTrabajo}
+              onChange={handleChange}
+              placeholder="Ej: 5"
+            />
+          </label>
+        </div>
 
-            <label>
-              Unidad
-              <select name="unidad" value={form.unidad} onChange={handleChange}>
-                <option value="gramos">gramos</option>
-                <option value="kilos">kilos</option>
+        <button
+          type="button"
+          className="btn-clima"
+          onClick={cargarClima}
+          disabled={cargandoClima}
+        >
+          {cargandoClima ? 'Obteniendo ubicación y clima...' : '📍 Meteorología'}
+        </button>
+        {errorClima && <p className="error-clima">{errorClima}</p>}
+
+        {form.lat && (
+          <>
+            <p className="coords-info">
+              Ubicación: {form.lat}, {form.lon}
+            </p>
+            <iframe
+              className="mini-mapa"
+              title="Ubicación del ejercicio"
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.lon) - 0.01}%2C${Number(form.lat) - 0.01}%2C${Number(form.lon) + 0.01}%2C${Number(form.lat) + 0.01}&layer=mapnik&marker=${form.lat}%2C${form.lon}`}
+            />
+            <button type="button" className="btn-mapa" onClick={irAlMapa}>
+              🛰️ Mapa/Distancia
+            </button>
+          </>
+        )}
+
+        <div className="row">
+          <label>
+            Temperatura
+            <div className="campo-con-unidad">
+              <input type="number" name="temperatura" value={form.temperatura} onChange={handleChange} step="0.1" />
+              <select value={form.temperaturaUnidad} onChange={cambiarUnidadTemp}>
+                {UNIDADES_TEMP.map((u) => (
+                  <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
+                ))}
               </select>
+            </div>
+          </label>
+          <label>
+            Humedad (%)
+            <input type="number" name="humedad" value={form.humedad} onChange={handleChange} />
+          </label>
+        </div>
+
+        <div className="row">
+          <label>
+            Viento
+            <div className="campo-con-unidad">
+              <input type="number" name="vientoVelocidad" value={form.vientoVelocidad} onChange={handleChange} step="0.1" />
+              <select value={form.vientoUnidad} onChange={cambiarUnidadViento}>
+                {UNIDADES_VIENTO.map((u) => (
+                  <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
+                ))}
+              </select>
+            </div>
+          </label>
+          <label>
+            Dirección viento
+            <input name="vientoDireccion" value={form.vientoDireccion} onChange={handleChange} placeholder="Ej: NE" />
+          </label>
+        </div>
+
+        {form.resultado !== 'en_blanco' && (
+          <>
+            <label>
+              Sustancia
+              <input name="sustancia" value={form.sustancia} onChange={handleChange} placeholder="Ej: TNT, C4, Hachís" />
             </label>
-          </div>
-        </>
-      )}
 
-      <label>
-        Notas
-        <textarea name="notas" value={form.notas} onChange={handleChange} rows="3" />
-      </label>
+            <div className="row">
+              <label>
+                Cantidad
+                <input type="number" name="cantidad" value={form.cantidad} onChange={handleChange} />
+              </label>
 
-      <button type="submit" disabled={guardando}>
-        {guardando ? 'Guardando...' : 'Guardar registro'}
-      </button>
-    </form>
+              <label>
+                Unidad
+                <select name="unidad" value={form.unidad} onChange={handleChange}>
+                  <option value="gramos">gramos</option>
+                  <option value="kilos">kilos</option>
+                </select>
+              </label>
+            </div>
+          </>
+        )}
+
+        <label>
+          Notas
+          <textarea name="notas" value={form.notas} onChange={handleChange} rows="3" />
+        </label>
+
+        <button type="submit" disabled={guardando}>
+          {guardando ? 'Guardando...' : 'Guardar registro'}
+        </button>
+      </form>
+    </>
   )
 }
 
